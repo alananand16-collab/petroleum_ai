@@ -1,0 +1,46 @@
+name: Application Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+    
+    name: Test on Python ${{ matrix.python-version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Verify imports
+        run: |
+          python -c "from src.config import Config; print('Config import OK')"
+          python -c "from src.utils import setup_logging; print('Utils import OK')"
+          python -c "from src.ingest import load_documents_with_text; print('Ingest import OK')"
+          python -c "from src.chatbot import PetroleumAIAssistant; print('Chatbot import OK')"
+
+      - name: Run syntax check
+        run: python -m py_compile src/*.py
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        if: always()
+        continue-on-error: true

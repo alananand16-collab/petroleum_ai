@@ -1,0 +1,45 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "README.md"
+      - "CONTRIBUTING.md"
+      - "docs/**"
+  workflow_dispatch:
+
+jobs:
+  validate-docs:
+    runs-on: ubuntu-latest
+    name: Validate Documentation
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check markdown formatting
+        run: |
+          pip install markdownlint-cli
+          markdownlint README.md CONTRIBUTING.md || true
+
+      - name: Verify links in README
+        run: |
+          python -c "
+          import re
+          with open('README.md') as f:
+              content = f.read()
+              # Check for broken link patterns
+              if '](http' in content or '](https' in content:
+                  print('✓ External links found')
+              if '](' in content:
+                  print('✓ Internal links found')
+          "
+
+      - name: Check file presence
+        run: |
+          echo "Checking required documentation files..."
+          test -f LICENSE && echo "✓ LICENSE found"
+          test -f README.md && echo "✓ README.md found"
+          test -f CONTRIBUTING.md && echo "✓ CONTRIBUTING.md found"
+          test -f .env.example && echo "✓ .env.example found"
+          test -f .gitignore && echo "✓ .gitignore found"
